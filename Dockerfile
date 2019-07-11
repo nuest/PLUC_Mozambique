@@ -1,7 +1,42 @@
-FROM python:2.7
+FROM python:3.7 AS builder
 
-ENV PCRASTER_VERSION=4.1.0
-ENV PCRASTER_ARCH=_x86-64
+ENV PCRASTER_VERSION=4.2.1
+
+RUN apt-get update \ 
+  && apt-get install -y --no-install-recommends \
+    cmake \
+    gcc \
+    g++ \
+    git \
+    qtbase5-dev \
+    libncurses5-dev \
+    libqwt-qt5-dev \
+    libxerces-c-dev \
+    libboost-all-dev \
+    libgdal-dev \
+    python3-numpy \
+    python3-docopt
+
+RUN pip install numpy docopt
+
+# https://stackoverflow.com/a/51737820/261210
+#RUN cd /usr/lib/x86_64-linux-gnu \
+#  && ln -s libboost_python-py.so libboost_python-py3.so
+
+# http://pcraster.geo.uu.nl/getting-started/pcraster-on-linux/
+# starting from 4.2.x there are no more binaries - need to build here
+WORKDIR /opt
+RUN curl -LO http://pcraster.geo.uu.nl/pcraster/$PCRASTER_VERSION/pcraster-$PCRASTER_VERSION.tar.bz2 \
+  && tar xf pcraster-$PCRASTER_VERSION.tar.bz2 && cd pcraster-$PCRASTER_VERSION \
+  && mkdir build \
+  && cd build \
+  && cmake -DFERN_BUILD_ALGORITHM:BOOL=TRUE -DCMAKE_INSTALL_PREFIX:PATH=/opt/pcraster -DPYTHON_EXECUTABLE:FILEPATH=/usr/local/bin/python .. \
+  && cmake --build . \
+  && make install
+
+FROM python:3
+
+COPY --from=builder /opt/pcraster /opt/pcraster
 
 # Prerequisites > http://pcraster.geo.uu.nl/getting-started/pcraster-on-linux/prerequisites/
 RUN apt-get update \ 
@@ -13,18 +48,8 @@ RUN apt-get update \
 
 RUN pip install numpy matplotlib
 
-# http://pcraster.geo.uu.nl/getting-started/pcraster-on-linux/installation-linux/
-WORKDIR /opt
-RUN curl -LO https://downloads.sourceforge.net/project/pcraster/PCRaster/$PCRASTER_VERSION/pcraster-$PCRASTER_VERSION$PCRASTER_ARCH.tar.gz \
-  && mkdir pcraster \
-  && tar zxf pcraster-*.tar.gz --strip-components=1 -C pcraster \
-  && rm pcraster-*.tar.gz
-
 ENV PATH=/opt/pcraster/bin:$PATH
 ENV PYTHONPATH=/opt/pcraster/python:$PYTHONPATH
-
-LABEL name=PLUC_MOZAMBIQUE
-LABEL version=1
 
 WORKDIR /pluc
 COPY model/ .
@@ -36,7 +61,9 @@ ARG VCS_REF
 ARG BUILD_DATE
 
 # Metadata http://label-schema.org/rc1/
-LABEL maintainer="Daniel Nüst <daniel.nuest@uni-muenster.de>" \
+LABEL name=PLUC_MOZAMBIQUE \
+      version=2 \
+      maintainer="Daniel Nüst <daniel.nuest@uni-muenster.de>" \
       org.label-schema.vendor="Judith Verstegen, Daniel Nüst" \
       org.label-schema.url="http://o2r.info" \
       org.label-schema.name="PLUC Mozambique" \

@@ -282,3 +282,19 @@ repo2docker --debug .
 
 The folder `binder` (see [docs](https://repo2docker.readthedocs.io/en/latest/usage.html#where-to-put-configuration-files)) contains several [configuration files](https://repo2docker.readthedocs.io/en/latest/config_files.html) to create the same environment as in the `Dockerfile` but with a Jupyter Notebook Server.
 Since the folder `binder` is found, the tool `repo2docker` and subsequently all Binder instances ignore the `Dockerfile` and use the configuration in there instead.
+
+--------------------------------
+
+10. Update to Python 3
+
+Python 2 is coming to an EOL on Jan 1st 2020.
+
+- Switch to Python 3
+- Switch to PCRaster 4.2.1, see http://pcraster.geo.uu.nl/getting-started/pcraster-on-linux/
+  - `pip install -U numpy docopt` needed before `cmake ...`
+  - doing installation in 
+  - using Python from virtual env and adjusting install path (also need sudo): `cmake -DFERN_BUILD_ALGORITHM:BOOL=TRUE -DCMAKE_INSTALL_PREFIX=/opt/pcraster-4.2.1_x86-64 -DPYTHON_EXECUTABLE:FILEPATH=$(which python) ..`
+  - end with `mv ~/pcraster/ /opt/pcraster`
+  - `export PATH=/opt/pcraster-4.2.1_x86-64/bin:/opt/pcraster-4.2.1_x86-64/lib:$PATH`
+  - `export PYTHONPATH=/opt/pcraster-4.2.1_x86-64/python`
+  
